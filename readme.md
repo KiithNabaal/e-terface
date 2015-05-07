@@ -21,3 +21,5 @@ the interface is not native to the OS, and is web-based.
 
 This is version 1.0, and has been tested on Windows 7 and CentOS.
 
+A technical document is included in the docs directory and gives an overview of
+what e-terface is, how to get started, and some info on the API.
