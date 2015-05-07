@@ -1,0 +1,46 @@
+html {
+	width: 100%;
+	height: 100%;
+}
+
+body {
+	width: 100%;
+	height: 100%;
+}
+
+#home {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	width: 100%;
+	height: 100%;
+}
+
+#directories {
+	position: relative;
+	width: 49%;
+	height: 30%;
+	float: left;
+	overflow: auto;
+	border-width: 1px;
+	border-style: solid;
+}
+
+#files {
+	position: relative;
+	width: 50%;
+	height: 30%;
+	float: left;
+	overflow: auto;
+	border-width: 1px;
+	border-style: solid;
+}
+
+
+#fileviewer {
+	width: 100%;
+	height: 70%;
+	overflow: auto;
+	border-width: 1px;
+	border-style: solid;
+}

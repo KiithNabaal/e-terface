@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<!-- 
+
+	The web files in WebContent exist for demo purposes only. These files
+	demonstrate one possible way to visualize the home/desktop environment.
+	
+	index.html - The welcome file Tomcat serves when a user visits address:port/e-terface
+	eterface-plugins.js - Some jQuery functions that send requests to the server
+	jquery-min.js - Compressed jQuery library
+	eterface-styles.css - CSS for index.html
+	dir-ico.png and file-ico.png - Some icons I made to add to the presentation
+
+ -->
+
+<html>
+	<head>
+		<script src="jquery-min.js"></script>
+		<script src="eterface-plugins.js"></script>
+		<link rel="stylesheet" type="text/css" href="eterface-styles.css" />
+	</head>
+
+	<body>
+		<div id="home">
+		</div>
+
+		<script>
+			var userName = "";
+
+			var navIndex = 0;
+			var navMax = 5;
+			var navList = [];
+
+			var Directory = new Object();
+			Directory.name = "";
+			Directory.path = "";
+			Directory.size = -1;
+			Directory.directories = [];
+			Directory.files = [];
+
+			var File = new Object();
+			File.name = "";
+			File.path = "";
+			File.size = -1;
+			File.type = "";
+
+			var fileIcon = "file-ico.png";
+			var dirIcon = "dir-ico.png";
+
+			//Let this populate whenever we get the JSON serialization back
+			var currentDir;
+
+			function goBack() {
+				if(navIndex > 0) {
+					navIndex--;
+				}
+
+				initLoaderDiv();
+				$.fn.getDirectory(userName, navList[navIndex].path, getDirectoryJSON);
+			}
+
+			function goForward() {
+				if(navIndex < navMax) {
+					navIndex++;
+				}
+
+				initLoaderDiv();
+				$.fn.getDirectory(userName, navList[navIndex].path, getDirectoryJSON);
+			}
+
+			function initNavButtons() {
+				var navBack = document.createElement("button");
+				navBack.id = "back";
+				navBack.innerHTML = "<";
+				
+				var navForward = document.createElement("button");
+				navForward.id = "forward";
+				navForward.innerHTML = ">";
+
+				$("#nav-bar").append(navBack);
+				$("#nav-bar").append(navForward);
+
+				$("#back").click(goBack);
+				$("#forward").click(goForward);
+			}
+
+			function initLoaderDiv() {
+				var loadingDiv = document.createElement("div");
+				loadingDiv.id = "loading-div";
+				
+				var loaderBackground = document.createElement("div");
+				loaderBackground.id = "loader-background";
+				
+				var loaderBgCSS = "position: fixed; width:100%; height:100%;" +
+						  		  "background-color:#00CCFF; opacity:0.25;" +
+						  		  "z-index:998; top:0px; left:0px;";
+						  		  
+				loaderBackground.setAttribute("style", loaderBgCSS);
+	
+				var x = ((window.innerWidth / 2) - 150);
+				var y = ((window.innerHeight / 2) - 150);
+
+				var loaderCSS = "position:fixed; left:" + x + "px; top:" + y + "px; " +
+								"width:30%; height:15%; border-width:2px; border-style:solid;" +
+								"z-index:999; background-color:white;";
+								
+				loadingDiv.setAttribute("style", loaderCSS);
+				loadingDiv.innerHTML = "Retrieving user data. Please wait...";
+
+				$("#home").append(loaderBackground);
+				$("#home").append(loadingDiv);
+			}
+
+			function viewResource(e) {
+				var res = e.currentTarget.id;
+				var frame = document.getElementById("frame");
+				
+				//Find the file object
+				var i;
+				var currName = currentDir.files[0].name;
+				for(i = 1; (i < currentDir.files.length) && (currName != res); i++) {
+					currName = currentDir.files[i].name;
+				}
+
+				var fPath = currentDir.files[i - 1].path;
+				
+				frame.src = "res/getResource?path=" + fPath;
+			}
+
+			function changeDir(e) {
+				var newDirectoryID = e.currentTarget.id;
+				
+				//Add the current directory to the nav history
+				if(navIndex < navMax) {
+					navList[navIndex] = currentDir;
+					navIndex++;
+				}
+
+				//Find the directory object
+				var i;
+				var currName = currentDir.directories[0].name;
+				for(i = 1; (i < currentDir.directories.length) && (currName != newDirectoryID); i++) {
+					currName = currentDir.directories[i].name;
+				}
+
+				var newDirectory = currentDir.directories[i - 1].path;
+				initLoaderDiv();
+
+				$.fn.getDirectory(userName, newDirectory, getDirectoryJSON);
+			}
+
+			function visualize(aDirectory) {
+				$("#home").empty();
+
+				var directoriesDiv = document.createElement("div");
+				directoriesDiv.id = "directories";
+				$("#home").append(directoriesDiv);
+
+				var navBar = document.createElement("div");
+				navBar.id = "nav-bar";
+				navBar.setAttribute("style", "width:100%; height:15%;");
+				$("#directories").append(navBar);
+				initNavButtons();
+
+				var filesDiv = document.createElement("div");
+				filesDiv.id = "files";
+				$("#home").append(filesDiv);
+
+				var fileviewer = document.createElement("div");
+				fileviewer.id = "fileviewer";
+				$("#home").append(fileviewer);
+
+				var viewFrame = document.createElement("iframe");
+				viewFrame.id = "frame";
+				viewFrame.setAttribute("style", "width:100%; height:100%;");
+				$("#fileviewer").append(viewFrame);
+
+				//Let's add all of the directories to their own group
+				var i;
+				var dirs = aDirectory.directories;
+
+				for(i = 0; i < dirs.length; i++) {
+					var d = document.createElement("div");
+					d.id = dirs[i].name;
+					d.innerHTML = "<img src=\"" + dirIcon + "\" />";
+					d.innerHTML += "<a href=#>" + d.id + "</a>";
+					d.setAttribute("style", "float: left; padding: 5px;");
+					$("#directories").append(d);
+
+					//Need to use this because some files may start with '.'
+					document.getElementById(d.id).addEventListener("click", changeDir);
+				}
+
+				//Let's add all of the files to their own group
+				var theFiles = aDirectory.files;
+
+				for(i = 0; i < theFiles.length; i++) {
+					var f = document.createElement("div");
+					f.id = theFiles[i].name;
+					f.innerHTML = "<img src=\"" + fileIcon + "\" />";
+					f.innerHTML += "<a href=#>" + f.id + "</a>";
+					$("#files").append(f);
+					
+					//Need to use this because some files may start with '.'
+					document.getElementById(f.id).addEventListener("click", viewResource);
+				}
+			}
+
+			function getDirectoryJSON(data) {
+				$("#home").empty();
+				
+				currentDir = Object.create(Directory);
+				currentDir.name = data.directoryName;
+				currentDir.path = data.directoryPath;
+				currentDir.size = data.numberOfItems;
+				currentDir.directories = [];
+				currentDir.files = [];
+
+				var i;
+				var dirList = data.directoryList;
+
+				for(i = 0; i < dirList.length; i++) {
+					var dir = Object.create(Directory);
+					dir.name = dirList[i].directoryName;
+					dir.path = dirList[i].directoryPath;
+					dir.size = dirList[i].numberOfItems;
+					dir.directories = [];
+					dir.files = [];
+
+					currentDir.directories[i] = dir;
+				}
+
+				var fileList = data.fileList;
+
+				for(i = 0; i < fileList.length; i++) {
+					var f = Object.create(File);
+					f.name = fileList[i].fileName;
+					f.path = fileList[i].filePath;
+					f.size = fileList[i].fileSize;
+					f.type = fileList[i].fileType;
+
+					currentDir.files[i] = f;
+				}
+
+				visualize(currentDir);
+			}
+
+			function submitUser(e) {
+				var drop = e.data;
+				var index = drop.selectedIndex;
+				var selected = drop[index].id;
+				userName = selected;
+
+				initLoaderDiv();
+
+				$.fn.selectUser(selected, getDirectoryJSON);
+			}
+
+			function showUsers(data) {
+				var i;
+				var list = data.userList;
+
+				var dropdown = document.createElement("select");
+				dropdown.id = "user";
+
+				$("#home").append(dropdown);
+
+				for(i = 0; i < list.length; i++) {
+					var item = document.createElement("option");
+					item.id = list[i];
+					item.value = list[i];
+					item.innerHTML = list[i];
+					$("#user").append(item);
+				}
+
+				var submit = document.createElement("button");
+				submit.id = "submit";
+				submit.type = "submit";
+				submit.innerHTML = "Select user";
+				$("#home").append(submit);
+				$("#submit").click(dropdown, submitUser);
+			}
+
+			$.fn.getUserList(showUsers);
+		</script>
+	</body>
+</html>
