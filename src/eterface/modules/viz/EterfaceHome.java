@@ -1,4 +1,4 @@
-package eterface.viz;
+package eterface.modules.viz;
 
 /**
  * Represents a user's home directory.

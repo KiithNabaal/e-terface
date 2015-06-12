@@ -1,4 +1,4 @@
-package eterface.viz;
+package eterface.modules.viz;
 
 /**
  * Handles the user directories and implements the API for
@@ -7,16 +7,24 @@ package eterface.viz;
  * @author Mike Czapik
  */
 
+import java.io.IOException;
 import java.util.*;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import eterface.modules.EterfaceModule;
 import eterface.tools.*;
 
-public class VisualizationModule {
+public class VisualizationModule extends EterfaceModule {
 	private HashMap<String, EterfaceHome> userHomeList;
 	private ArrayList<String> usersList;
 	
 	private static final String ERROR_PATH_NOT_FOUND =
 	"{ \"error\":\"ERR_PATH_NOT_FOUND\" }";
+	
+	private static final String METHOD_PEEK = "peek";
+	private static final String METHOD_INIT_USER = "initUser";
 	
 	/**
 	 * Creates a new visualization module object with
@@ -66,5 +74,39 @@ public class VisualizationModule {
 		}
 		
 		return dir.serialize();
+	}
+	
+	public Object executeMethod(HttpServletRequest req, HttpServletResponse res) {
+		String url = req.getRequestURL().toString();
+		String json = "";
+		
+		//Did we receive a user to track?
+		if(url.indexOf("/viz/" + METHOD_INIT_USER) >= 0) {
+			String user = req.getParameter("user");
+			
+			initUser(user);
+			
+			String homePath = SystemTools.getHomeDirectory(user);
+			json = peek(user, homePath);
+		}
+		
+		//Is the user attempting to view the contents of a directory?
+		if(url.indexOf("/viz/dir/" + METHOD_PEEK) >= 0) {
+			String user = req.getParameter("user");
+			String path = req.getParameter("dir");
+			json = peek(user, path);
+		}
+		
+		try {
+			res.getOutputStream().println(json);
+		}
+		catch(IOException ioe) {
+			//Not sure what to do about this yet...
+		}
+		catch(Exception e) {
+			//Considering refactoring some code for an EterfaceError class
+		}
+		
+		return null;
 	}
 }

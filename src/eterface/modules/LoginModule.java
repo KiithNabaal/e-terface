@@ -1,4 +1,4 @@
-package eterface.login;
+package eterface.modules;
 
 /**
  * Provides login-related services for e-terface.
@@ -8,12 +8,17 @@ package eterface.login;
 
 import java.io.*;
 import java.util.*;
+
 import javax.json.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import eterface.tools.SystemTools;
 
-public class LoginModule {
+public class LoginModule extends EterfaceModule {
 	private ArrayList<String> userList;
+	
+	private static final String METHOD_USER_LIST = "userList";
 	
 	public LoginModule() {
 		userList = new ArrayList<String>();
@@ -54,5 +59,27 @@ public class LoginModule {
 		builder.add("userList", arr);
 		
 		return builder.build().toString();
+	}
+	
+	public Object executeMethod(HttpServletRequest req, HttpServletResponse res) {
+		String url = req.getRequestURL().toString();
+		String json = "";
+		
+		//Is the user attempting to log in?
+		if(url.indexOf("/login/" + METHOD_USER_LIST) >= 0) {
+			json = usersToJSON();
+			
+			try {
+				res.getOutputStream().println(json);
+			}
+			catch(IOException ioe) {
+				//Not sure what to do about this yet...
+			}
+			catch(Exception e) {
+				//Considering refactoring some code for an EterfaceError class
+			}
+		}
+		
+		return null;
 	}
 }

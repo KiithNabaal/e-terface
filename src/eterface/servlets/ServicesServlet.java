@@ -47,6 +47,9 @@ import eterface.viz.*;
 import eterface.services.*;
 import eterface.tools.*;
 import eterface.login.*;
+import eterface.modules.LoginModule;
+import eterface.modules.ServicesModule;
+import eterface.modules.viz.VisualizationModule;
 
 public class ServicesServlet extends HttpServlet implements ServletContextListener {
 	private VisualizationModule vizModule = new VisualizationModule();
@@ -63,17 +66,19 @@ public class ServicesServlet extends HttpServlet implements ServletContextListen
 	
 	private static final String ERROR_NO_SUCH_METHOD = "{ \"error\":\"ERR_NO_SUCH_METHOD\" }";
 	
+	private static final String ERROR_NO_SUCH_SERVICE = "{ \"error\":\"ERR_NO_SUCH_SERVICE\" }";
+	
 	/*
 	 * The user attempted to get a resource that is either in use, system-related, or
 	 * some other reason. See FileSystemException in the Java documentation.
 	 */
 	private static final String ERROR_FILE_IRRETRIEVABLE = "{ \"error\":\"ERR_FILE_IRRETRIEVABLE\" }";
 	
-	//The Strings below indicate the method a user is requesting
-	private static final String METHOD_PEEK = "peek";
-	private static final String METHOD_USER_LIST = "userList";
-	private static final String METHOD_INIT_USER = "initUser";
-	private static final String METHOD_GET_RESOURCE = "getResource";
+	//The Strings below indicate the service a user is requesting
+	private static final String VISUALIZATION = "/viz/";
+	private static final String LOGIN = "/login/";
+	private static final String SERVICES = "/serv/";
+	private static final String RESOURCE = "/res/";
 	
 	//Process actions whenever Tomcat starts up
 	public void contextInitialized(ServletContextEvent event) {
@@ -119,91 +124,47 @@ public class ServicesServlet extends HttpServlet implements ServletContextListen
 			return;
 		}
 
-		String method = getQueryMethod(req);
+		String moduleService = req.getRequestURL().toString();
 		
 		try {
-			if(method == null) {
-				res.getOutputStream().println(ERROR_NO_SUCH_METHOD);
+			if(moduleService.indexOf(LOGIN) >= 0) {
+				loginModule.executeMethod(req, res);
+			}
+			
+			else if(moduleService.indexOf(VISUALIZATION) >= 0) {
+				vizModule.executeMethod(req, res);
+			}
+			
+			else if(moduleService.indexOf(RESOURCE) >= 0) {
+				String path = req.getParameter("path");
+				File f = new File(path);
+					
+				try {
+					Files.copy(f.toPath(), res.getOutputStream());
+				}
+				catch(ClientAbortException cae) {
+					/*
+					 * If a user cancels (closes a connection) a request,
+					 * we will get an exception server side. This is here
+					 * to bring awareness to that particular situation,
+					 * and to keep what should be a harmless exception from
+					 * printing to standard err.
+					 * 
+					 * Perhaps later versions can handle this better?
+					 */
+				}
+				catch(FileSystemException fse) {
+					res.getOutputStream().println(ERROR_FILE_IRRETRIEVABLE);
+				}
 			}
 			
 			else {
-				if(method.equals(METHOD_USER_LIST)) {
-					String json = loginModule.usersToJSON();
-					
-					res.getOutputStream().println(json);
-				}
-				
-				else if(method.equals(METHOD_INIT_USER)) {
-					String user = req.getParameter("user");
-					
-					vizModule.initUser(user);
-					
-					String homePath = SystemTools.getHomeDirectory(user);
-					String json = vizModule.peek(user, homePath);
-					
-					res.getOutputStream().println(json);
-				}
-				
-				else if(method.equals(METHOD_PEEK)) {
-					String user = req.getParameter("user");
-					String path = req.getParameter("dir");
-					String json = vizModule.peek(user, path);
-					
-					res.getOutputStream().println(json);
-				}
-				
-				else if(method.equals(METHOD_GET_RESOURCE)) {
-					String path = req.getParameter("path");
-					File f = new File(path);
-					
-					try {
-						Files.copy(f.toPath(), res.getOutputStream());
-					}
-					catch(ClientAbortException cae) {
-						/*
-						 * If a user cancels (closes a connection) a request,
-						 * we will get an exception server side. This is here
-						 * to bring awareness to that particular situation,
-						 * and to keep what should be a harmless exception from
-						 * printing to standard err.
-						 * 
-						 * Perhaps later versions can handle this better?
-						 */
-					}
-					catch(FileSystemException fse) {
-						res.getOutputStream().println(ERROR_FILE_IRRETRIEVABLE);
-					}
-				}
+				//Could not match given service with known services.
+				res.getOutputStream().println(ERROR_NO_SUCH_SERVICE);
 			}
 		}
 		catch(IOException ioe) {
 			ioe.printStackTrace();
 		}
-	}
-
-	private String getQueryMethod(HttpServletRequest r) {
-		String url = r.getRequestURL().toString();
-		
-		//Is the user attempting to log in?
-		if(url.indexOf("/login/" + METHOD_USER_LIST) >= 0) {
-			return METHOD_USER_LIST;
-		}
-		
-		//Did we receive a user to track?
-		if(url.indexOf("/viz/" + METHOD_INIT_USER) >= 0) {
-			return METHOD_INIT_USER;
-		}
-		
-		//Is the user attempting to view the contents of a directory?
-		if(url.indexOf("/viz/dir/" + METHOD_PEEK) >= 0) {
-			return METHOD_PEEK;
-		}
-		
-		//Is the user trying to retrieve a resource?
-		if(url.indexOf("/res/" + METHOD_GET_RESOURCE) >= 0) {
-			return METHOD_GET_RESOURCE;
-		}
-		
-		return null;
 	}
 }

@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.util.*;
 
-import eterface.viz.EterfaceDirectory;
+import eterface.modules.viz.EterfaceDirectory;
 
 public class SystemTools {
 	private static String sys = System.getProperty("os.name").toLowerCase();

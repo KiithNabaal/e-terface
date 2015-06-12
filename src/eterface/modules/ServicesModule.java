@@ -1,4 +1,7 @@
-package eterface.services;
+package eterface.modules;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * This will be worked on in the future. The point of the services module
@@ -14,6 +17,10 @@ package eterface.services;
  * @author Mike Czapik
  */
 
-public class ServicesModule {
+public class ServicesModule extends EterfaceModule {
 	public ServicesModule() { }
+	
+	public Object executeMethod(HttpServletRequest req, HttpServletResponse res) {
+		return null;
+	}
 }
