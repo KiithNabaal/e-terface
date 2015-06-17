@@ -29,6 +29,6 @@
 		<url-pattern>/login/userList</url-pattern>
 		<url-pattern>/viz/initUser</url-pattern>
 		<url-pattern>/viz/dir/peek</url-pattern>
-		<url-pattern>/res/getResource</url-pattern>
+		<url-pattern>/services/read</url-pattern>
 	</servlet-mapping>
 </web-app>
