@@ -23,10 +23,10 @@ package eterface.servlets;
  *                    are user and dir.
  * 	(ex: http://localhost:8080/e-terface/viz/dir/peek?user=myuser&dir=/usr/home/myuser/Desktop)
  * 
- *  - /res/getResource : gets the specified resource from the system. Its param is
- *  					 path.
+ *  - /services/read : reads the specified resource from the system. Its param is
+ *  				   path.
  *  
- *   (ex: http://localhost:8080/e-terface/res/getResource?path=/usr/home/myuser/res.ext)
+ *   (ex: http://localhost:8080/e-terface/services/read?path=/usr/home/myuser/res.ext)
  * 
  * @author: Mike Czapik
  * 
@@ -43,10 +43,9 @@ import javax.servlet.http.*;
 
 import org.apache.catalina.connector.ClientAbortException;
 
-import eterface.viz.*;
-import eterface.services.*;
+import eterface.modules.viz.*;
 import eterface.tools.*;
-import eterface.login.*;
+import eterface.modules.*;
 import eterface.modules.LoginModule;
 import eterface.modules.ServicesModule;
 import eterface.modules.viz.VisualizationModule;
@@ -68,17 +67,10 @@ public class ServicesServlet extends HttpServlet implements ServletContextListen
 	
 	private static final String ERROR_NO_SUCH_SERVICE = "{ \"error\":\"ERR_NO_SUCH_SERVICE\" }";
 	
-	/*
-	 * The user attempted to get a resource that is either in use, system-related, or
-	 * some other reason. See FileSystemException in the Java documentation.
-	 */
-	private static final String ERROR_FILE_IRRETRIEVABLE = "{ \"error\":\"ERR_FILE_IRRETRIEVABLE\" }";
-	
 	//The Strings below indicate the service a user is requesting
 	private static final String VISUALIZATION = "/viz/";
 	private static final String LOGIN = "/login/";
-	private static final String SERVICES = "/serv/";
-	private static final String RESOURCE = "/res/";
+	private static final String SERVICES = "/services/";
 	
 	//Process actions whenever Tomcat starts up
 	public void contextInitialized(ServletContextEvent event) {
@@ -135,27 +127,8 @@ public class ServicesServlet extends HttpServlet implements ServletContextListen
 				vizModule.executeMethod(req, res);
 			}
 			
-			else if(moduleService.indexOf(RESOURCE) >= 0) {
-				String path = req.getParameter("path");
-				File f = new File(path);
-					
-				try {
-					Files.copy(f.toPath(), res.getOutputStream());
-				}
-				catch(ClientAbortException cae) {
-					/*
-					 * If a user cancels (closes a connection) a request,
-					 * we will get an exception server side. This is here
-					 * to bring awareness to that particular situation,
-					 * and to keep what should be a harmless exception from
-					 * printing to standard err.
-					 * 
-					 * Perhaps later versions can handle this better?
-					 */
-				}
-				catch(FileSystemException fse) {
-					res.getOutputStream().println(ERROR_FILE_IRRETRIEVABLE);
-				}
+			else if(moduleService.indexOf(SERVICES) >= 0) {
+				servModule.executeMethod(req, res);
 			}
 			
 			else {

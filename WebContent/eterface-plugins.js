@@ -59,7 +59,7 @@
 //Gets some resource located at a URL from the Web Server
 (function($) {
 	$.fn.getResource = function(path, callback) {
-		var reqURL = "res/getResource?path=" + path;
+		var reqURL = "services/read?path=" + path;
 		
 		$.ajax({
 			url: reqURL,
